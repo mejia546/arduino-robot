@@ -1,0 +1,187 @@
+# Arduino_Project
+UMass Lowell Group Project for Design Lab 1
+#include <Adafruit_MotorShield.h>
+
+#include <Wire.h>
+#include "utility/Adafruit_PWMServoDriver.h"
+
+
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *myMotor_L = AFMS.getMotor(1);
+Adafruit_DCMotor *myMotor_R = AFMS.getMotor(2);
+
+/*
+ * The testbot has the following pinouts:
+ 
+The wheel motors are connected to ports M3 and M4 on the motor shield with the same polarity
+ 
+The three line sensors are connect to A0, A1 and A2
+ 
+There are two bumper switches at the front corners connected to Pin 8 and Pin 10
+ 
+IR receiver – Pin 2
+Piezo Buzzer – Pin 3
+LEDs (one at each front cover) – Pins 4 and 5
+Pushbutton – Pin 6
+Light dependent resistor (LDR) – Pin 7
+Potentiometer – A3
+
+ */
+//Define statements for Motor
+#define BumperRight 10
+#define BumperLeft 6
+#define LSensor1 A0
+#define LSensor2 A1
+#define Lsensor3 A2
+#define IR_RECEIVER 2
+#define PIEZO 3
+#define LED1 4
+#define LED2 5
+#define PUSH_BUTTON 6
+#define LDR 7
+#define POTENTIOMETER A3
+#define ADC_stabilize 5
+unsigned long prevMillis = 0;
+int leftValue = 0;
+int rightValue =0;
+void setup() {
+  Serial.begin(9600);
+  AFMS.begin();
+  myMotor_L->setSpeed(100);
+  myMotor_R->setSpeed(100);
+  pinMode(IR_RECEIVER,INPUT);
+  pinMode(PIEZO,OUTPUT);
+  pinMode(LED1,OUTPUT);
+  pinMode(LED2,OUTPUT);
+  pinMode(PUSH_BUTTON,INPUT);
+  pinMode(LDR,INPUT);
+  pinMode(POTENTIOMETER,OUTPUT);
+  pinMode(BumperLeft,INPUT_PULLUP);
+  pinMode(BumperRight,INPUT_PULLUP);
+}
+
+//void loop() {
+//myMotor_L->run(FORWARD);
+//myMotor_R->run(FORWARD);
+//}
+void TURN_LEFT();
+int OBSTRUCTION();
+void TURN_RIGHT();
+void GO_STRAIGHT();
+void MOVE_BACKWARD();
+//the obstruction_[direction] functions are used to determine whether an obstruction has been encountered
+//return 0 for no obstruction return 1 for obstruction
+int obstruction_left();
+int obstruction_right();
+int obstruction_front_1();
+int obstruction_front_2();
+void  escape_left(int obstruction);
+void escape_right(int obstruction);
+void escape_front_1(int obstruction);//function used in the event that the robot encounters an obstacle in front of it.
+void escape_front_2(int obstruction);
+//int obstruction_test;
+//int TURN_RIGHT();
+void loop(){
+  GO_STRAIGHT(); 
+  escape_front_1(obstruction_front_1());
+  escape_front_2(obstruction_front_2());
+  //escape_right(obstruction_right());
+ // escape_left(obstruction_left());
+}
+
+void TURN_RIGHT(){
+
+  unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){
+       currentMillis = millis();
+       myMotor_L->run(FORWARD);
+       myMotor_R->run(BACKWARD);
+       interval = currentMillis - prevMillis;
+  }
+     
+
+
+}
+void GO_STRAIGHT(){
+  myMotor_L->run(FORWARD);
+  myMotor_R->run(FORWARD);//Need to change all Motor_R to opposite...this should initially be forWard
+}
+void TURN_LEFT(){
+    unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){
+     currentMillis = millis();
+     myMotor_L->run(BACKWARD);
+     myMotor_R->run(FORWARD);
+     interval = currentMillis - prevMillis;
+  }
+     
+ 
+}
+void MOVE_BACKWARD(){//makes the robot move backwards
+  unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){
+     currentMillis = millis();
+     myMotor_L->run(BACKWARD);
+     myMotor_R->run(BACKWARD);
+     interval = currentMillis - prevMillis;
+  }
+    
+}
+
+int obstruction_front_1(){//check the bumper readings, if any of them have been pressed, then return 1, else return 0.
+  if(digitalRead(BumperLeft)){
+    Serial.print("There is an obstruction\n");
+    Serial.print("Attempting to reposition.....");
+    return 1;
+   }
+ // if(digitalRead(BumperRight)){
+  //      Serial.print("There is an obstruction\n");
+  //      Serial.print("Attempting to reposition.....");
+  //      return 1;
+  //}
+  return 0;
+}
+int obstruction_front_2(){//check the bumper readings, if any of them have been pressed, then return 1, else return 0.
+  if(digitalRead(BumperRight)){
+    Serial.print("There is an obstruction\n");
+    Serial.print("Attempting to reposition.....");
+    return 1;
+   }
+ // if(digitalRead(BumperRight)){
+  //      Serial.print("There is an obstruction\n");
+  //      Serial.print("Attempting to reposition.....");
+  //      return 1;
+  //}
+  return 0;
+}
+
+
+void escape_front_1(int obstruction){
+     
+  if(obstruction == 0){
+     myMotor_L->run(RELEASE);
+     myMotor_R->run(RELEASE);
+      delay(1500);
+     MOVE_BACKWARD();
+     TURN_LEFT();
+     //TURN_LEFT();
+  }
+}
+
+void escape_front_2(int obstruction){
+     
+  if(obstruction == 0){
+     myMotor_L->run(RELEASE);
+     myMotor_R->run(RELEASE);
+      delay(1500);
+     MOVE_BACKWARD();
+     TURN_RIGHT();
+     //TURN_LEFT();
+  }
+}
