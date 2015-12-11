@@ -1,0 +1,202 @@
+# Arduino_Project
+UMass Lowell Group Project for Design Lab 1
+#include <Adafruit_MotorShield.h>
+
+#include <Wire.h>
+#include "utility/Adafruit_PWMServoDriver.h"
+
+
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *myMotor_L = AFMS.getMotor(1);
+Adafruit_DCMotor *myMotor_R = AFMS.getMotor(2);
+
+/*
+ * The testbot has the following pinouts:
+ 
+The wheel motors are connected to ports M3 and M4 on the motor shield with the same polarity
+ 
+The three line sensors are connect to A0, A1 and A2
+ 
+There are two bumper switches at the front corners connected to Pin 8 and Pin 10
+ 
+IR receiver – Pin 2
+Piezo Buzzer – Pin 3
+LEDs (one at each front cover) – Pins 4 and 5
+Pushbutton – Pin 6
+Light dependent resistor (LDR) – Pin 7
+Potentiometer – A3
+
+ */
+//Define statements for Motor
+#define BumperRight 10
+#define BumperLeft 6
+#define LSensor1 A0
+#define LSensor2 A1
+#define LSensor3 A2
+#define IR_RECEIVER 2
+#define PIEZO 3
+#define LED1 4
+#define LED2 5
+#define PUSH_BUTTON 6
+#define LDR 7
+#define POTENTIOMETER A3
+#define ADC_stabilize 5
+unsigned long prevMillis = 0;
+int leftValue = 0;
+int rightValue =0;
+void setup() {
+  Serial.begin(9600);
+  AFMS.begin();
+  myMotor_L->setSpeed(100);
+  myMotor_R->setSpeed(100);
+  pinMode(LSensor1,INPUT);
+  pinMode(LSensor2,INPUT);
+  pinMode(LSensor3,INPUT);
+  pinMode(IR_RECEIVER,INPUT);
+  pinMode(PIEZO,OUTPUT);
+  pinMode(LED1,OUTPUT);
+  pinMode(LED2,OUTPUT);
+  pinMode(PUSH_BUTTON,INPUT);
+  pinMode(LDR,INPUT);
+  pinMode(POTENTIOMETER,OUTPUT);
+  pinMode(BumperLeft,INPUT);
+  pinMode(BumperRight,INPUT);
+}
+
+//void loop() {
+//myMotor_L->run(FORWARD);
+//myMotor_R->run(FORWARD);
+//}
+void TURN_LEFT();
+int OBSTRUCTION();
+void TURN_RIGHT();
+void GO_STRAIGHT();
+void MOVE_BACKWARD();
+int obstruction_left();//detects obstructions only at the robots left
+int obstruction_right();//detects obstructions only at the robots right: returns 0 for no obstruction returns 1 for obstruction
+int obstruction_front();//detects obstructions directly in front of the robot
+void  escape_left(int obstruction);//moves away from the obstruction at the lefdt of the robot
+void escape_right(int obstruction);//moves away from the obstruction at the right of the robot
+void escape_front(int obstruction);//moves away from the obstruction at the front of the robot
+int obstruction_test;//variable used to store of the state of the obstruction, 0 for no obstruction, 1 for obstruction
+//int TURN_RIGHT();
+void loop(){
+  Serial.print(9600);
+  GO_STRAIGHT();
+  obstruction_test = obstruction_front();
+  escape_front(obstruction_test);
+  //escape_right(obstruction_right());
+ // escape_left(obstruction_left());
+}
+
+int obstruction_front(){
+  if(analogRead(LSensor1) >= 900 || analogRead(LSensor2) >= 900|| analogRead(LSensor3) >= 900){
+    Serial.print("There is an obstruction\n");
+    Serial.print("Attempting to reposition.....");
+    return 1;
+   }
+  return 0;
+}
+
+
+void escape_front(int obstruction){
+     
+  if(obstruction){
+     myMotor_L->run(RELEASE);
+     myMotor_R->run(RELEASE);
+     delay(1500);
+     MOVE_BACKWARD();
+     TURN_LEFT();
+     TURN_LEFT();
+  }
+}
+
+
+
+
+
+
+//The functions below were implemented for increased functionality if need be
+void TURN_RIGHT(){
+
+  unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){//turn right for 1 second
+       currentMillis = millis();
+       myMotor_L->run(FORWARD);
+       myMotor_R->run(BACKWARD);
+       interval = currentMillis - prevMillis;
+  }
+}
+
+
+void GO_STRAIGHT(){
+  myMotor_L->run(FORWARD);
+  myMotor_R->run(FORWARD);
+}
+void TURN_LEFT(){
+    unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){
+     currentMillis = millis();
+     myMotor_L->run(BACKWARD);
+     myMotor_R->run(FORWARD);
+     interval = currentMillis - prevMillis;
+  }
+     
+ 
+}
+void MOVE_BACKWARD(){//Need to make it move backward for 5 seconds
+  unsigned long currentMillis = millis();
+  int interval = 0;
+  prevMillis = currentMillis;
+  while( interval <= 1000){
+     currentMillis = millis();
+     myMotor_L->run(BACKWARD);
+     myMotor_R->run(BACKWARD);
+     interval = currentMillis - prevMillis;
+  }
+    
+}
+int obstruction_left(){
+  if(digitalRead(BumperLeft) && !digitalRead(BumperRight)){
+        Serial.print("I'm in my obstruction left loop\n");
+
+    return 0;
+   }
+   return 1;
+}
+int obstruction_right(){
+  if(!digitalRead(BumperLeft) && digitalRead(BumperRight)){
+    Serial.print("I'm in my obstruction right loop\n");
+    return 0;
+   }
+   return 1;
+}
+
+void  escape_left(int obstruction){
+ 
+  if(obstruction){
+     myMotor_L->run(RELEASE);
+    myMotor_R->run(RELEASE);
+     delay(1000);
+    MOVE_BACKWARD();
+    TURN_RIGHT();
+  }
+}
+
+void escape_right(int obstruction){
+    
+  if(obstruction){
+    myMotor_L->run(RELEASE);
+    myMotor_R->run(RELEASE);
+     delay(1500);
+    MOVE_BACKWARD();
+    delay(1000);
+    TURN_LEFT();
+  }
+}
+
+
