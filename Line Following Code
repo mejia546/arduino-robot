@@ -1,0 +1,70 @@
+# Arduino_Project
+UMass Lowell Group Project for Design Lab 1
+
+#include <Wire.h>
+#include <Adafruit_MotorShield.h>
+#include "utility/Adafruit_PWMServoDriver.h"
+
+
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *myMotor_L = AFMS.getMotor(1);
+Adafruit_DCMotor *myMotor_R = AFMS.getMotor(2);
+
+
+//Numerical limit for black liine detection
+const int Line_limit= 500;    
+
+//Sensor Name
+int Lsensor1 = A0;
+int Lsensor2 = A1;
+int Lsensor3 = A2;
+
+
+void setup() {
+
+  AFMS.begin();     
+ 
+ //Set Motor Speeds to 100 (Value between 0 and 255)
+  myMotor_L->setSpeed(100);
+  myMotor_R->setSpeed(100);   
+
+}
+ int sensorValue1;
+ int sensorValue2;
+ int sensorValue3;
+void loop() {
+  sensorValue1 = analogRead(Lsensor1);
+  sensorValue2 = analogRead(Lsensor2);
+  sensorValue3 = analogRead(Lsensor3);
+
+  //Comparison checks to tell the robot what to do
+  //if left sensor is on the line then
+  if (sensorValue3 > Line_limit){
+    TURN_RIGHT();
+  }
+  else{  
+    if(sensorValue1 > Line_limit){
+      TURN_LEFT();
+    }
+     else{
+      GO_STRAIGHT();
+    }
+  }
+}
+
+//makes the robot go straight
+void GO_STRAIGHT(){
+  myMotor_L->run(FORWARD);
+  myMotor_R->run(FORWARD);//Need to change all Motor_R to opposite...this should initially be forWard
+}
+
+//makes the robot turn left
+void TURN_LEFT(){
+     myMotor_L->run(BACKWARD);
+     myMotor_R->run(FORWARD);
+ }
+//Makes the robot turn right
+void TURN_RIGHT(){
+       myMotor_L->run(FORWARD);
+       myMotor_R->run(BACKWARD);
+   }
